@@ -61,6 +61,8 @@ export interface QueryExample {
   description: string;
 }
 
+export type { ThemeValue as Theme } from "./ui.types";
+
 export type ConverterMode = "prisma-to-sql" | "sql-to-prisma";
 
 export type BottomTab = "analysis" | "suggestions" | "ast";

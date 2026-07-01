@@ -19,15 +19,15 @@ export default function Tooltip({
   side = "top",
 }: TooltipProps) {
   const [visible, setVisible] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const show = () => {
-    clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setVisible(true), 200);
+    clearTimeout(timeoutRef.current ?? undefined);
+    timeoutRef.current = window.setTimeout(() => setVisible(true), 200);
   };
 
   const hide = () => {
-    clearTimeout(timeoutRef.current);
+    clearTimeout(timeoutRef.current ?? undefined);
     setVisible(false);
   };
 

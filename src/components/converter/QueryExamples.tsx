@@ -1,10 +1,7 @@
 import { useState, useMemo } from "react";
 import { Search } from "lucide-react";
-import {
-  queryExamples,
-  getExampleCategories,
-  type QueryExample,
-} from "../../services/examples.service";
+import { queryExamples } from "../../services/examples";
+import type { QueryExample } from "../../types";
 import Badge from "../ui/Badge";
 
 interface QueryExamplesProps {
@@ -15,8 +12,10 @@ export default function QueryExamples({ onSelect }: QueryExamplesProps) {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const categories = useMemo(() => getExampleCategories(), []);
-
+  const categories = useMemo(
+    () => ["All", ...new Set(queryExamples.map((example) => example.category))],
+    [],
+  );
   const filtered = useMemo(() => {
     let items = queryExamples;
 

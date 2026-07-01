@@ -1,4 +1,4 @@
-console.log("=== CONVERTER TSX LOADED ===");
+
 import { useState, useCallback } from "react";
 import {
   ArrowRight,
@@ -67,7 +67,7 @@ export default function Converter() {
   const [isConverting, setIsConverting] = useState(false);
 
   const handleConvert = useCallback(() => {
-    console.log("=== CONVERT CLICKED ===", mode);
+    
     if (!input.trim()) {
       toast.error("Enter a query to convert");
       return;
@@ -131,8 +131,7 @@ export default function Converter() {
 
   useKeyboardShortcuts({
     "mod+enter": handleConvert,
-    "mod+s": (e) => {
-      e.preventDefault?.();
+    "mod+s": () => {
       handleSaveSnippet();
     },
   });
