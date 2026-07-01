@@ -152,9 +152,6 @@ export default function Converter() {
         <div>
           <div className="mb-1 flex items-center gap-2">
             <Sparkles size={16} className="text-blue-500" />
-            <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Developer Tool
-            </span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Query Converter

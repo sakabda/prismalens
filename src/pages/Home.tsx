@@ -80,10 +80,8 @@ export default function Home() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
         >
-          The Prisma{" "}
-          <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-            Developer Toolkit
-          </span>
+          The Prisma //{" "}
+          <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent"></span>
         </motion.h1>
 
         <motion.p
