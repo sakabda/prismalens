@@ -40,6 +40,7 @@ import type {
   QueryAnalysis,
   PrismaQueryAST,
 } from "../types";
+import CreateSnippetModal from "../components/snippets/CreateSnippetModal";
 
 const DEFAULT_PRISMA = `prisma.user.findMany({
   where: {
@@ -65,6 +66,7 @@ export default function Converter() {
   const [activeTab, setActiveTab] = useState<BottomTab>("analysis");
   const [showSidebar, setShowSidebar] = useState(true);
   const [isConverting, setIsConverting] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
 
   const handleConvert = useCallback(() => {
     
@@ -110,16 +112,24 @@ export default function Converter() {
     setAst(null);
   }, []);
 
+  // const handleSaveSnippet = useCallback(() => {
+  //   if (!input.trim()) {
+  //     toast.error("Nothing to save");
+  //     return;
+  //   }
+  //   const name = prompt("Snippet name:");
+  //   if (!name?.trim()) return;
+  //   saveSnippet(name.trim(), input, mode);
+  //   toast.success("Snippet saved");
+  // }, [input, mode]);
   const handleSaveSnippet = useCallback(() => {
-    if (!input.trim()) {
-      toast.error("Nothing to save");
-      return;
-    }
-    const name = prompt("Snippet name:");
-    if (!name?.trim()) return;
-    saveSnippet(name.trim(), input, mode);
-    toast.success("Snippet saved");
-  }, [input, mode]);
+  if (!input.trim()) {
+    toast.error("Nothing to save");
+    return;
+  }
+
+  setShowSaveDialog(true);
+}, [input]);
 
   const handleExampleSelect = useCallback((query: string) => {
     setInput(query);
@@ -213,7 +223,7 @@ export default function Converter() {
               transition={{ duration: 0.2 }}
               className="hidden shrink-0 overflow-hidden lg:block"
             >
-              <Card className="h-[460px] overflow-hidden">
+              <Card className="h-115 overflow-hidden">
                 <ExampleSidebar onSelect={handleExampleSelect} />
               </Card>
             </motion.aside>
@@ -355,6 +365,22 @@ export default function Converter() {
           </motion.div>
         )}
       </AnimatePresence>
+      <CreateSnippetModal
+  open={showSaveDialog}
+  onClose={() => setShowSaveDialog(false)}
+  onSave={(data) => {
+    saveSnippet(
+      data.name,
+      input,
+      mode,
+      data.tags,
+    );
+
+    toast.success("Snippet saved");
+
+    setShowSaveDialog(false);
+  }}
+/>
     </div>
   );
 }

@@ -81,7 +81,7 @@ export default function Home() {
           className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
         >
           The Prisma //{" "}
-          <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent"></span>
+          <span className="bg-linear-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent"></span>
         </motion.h1>
 
         <motion.p

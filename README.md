@@ -1,32 +1,28 @@
-# React + TypeScript + Vite
+# PrismaLens
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+PrismaLens is a web app for converting Prisma queries to SQL, SQL to Prisma, analyzing query complexity, and exploring example queries.
 
-Currently, two official plugins are available:
+## Maintainer
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Maintained by Sakabda Das
 
-## React Compiler
+- Email: sakabda98das@gmail.com
+- GitHub: (https://github.com/sakabda)
+- Contributions: please open an issue or submit a pull request for bugs, improvements, and feature requests.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Development
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Build
+
+```bash
+npm run build
+```
+
+## Contributing
+
+Contributions are welcome. If you find a bug or would like to suggest an enhancement, please open an issue first and include as much detail as possible.
