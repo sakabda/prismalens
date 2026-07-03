@@ -1,26 +1,42 @@
 import type { JoinDefinition } from "./joins";
 
-export function buildInclude(
-  include?: Record<string, boolean>,
-): JoinDefinition[] {
+export interface SchemaRegistry {
+  getForeignKey(model: string, relation: string): { local: string; foreign: string } | null;
+}
 
+export function buildInclude(
+  baseTable: string,
+  include?: Record<string, boolean>,
+  schema?: SchemaRegistry
+): JoinDefinition[] {
   if (!include) return [];
 
   const joins: JoinDefinition[] = [];
 
-  Object.entries(include).forEach(([table, enabled]) => {
-
+  Object.entries(include).forEach(([relation, enabled]) => {
     if (!enabled) return;
 
-    joins.push({
-      table,
-      localKey: "id",
-      foreignKey: `${table}Id`,
-      type: "LEFT",
-    });
+    let localKey = "{pk}";
+    let foreignKey = "{fk}";
+    let warning: string | undefined = `Relation '${relation}' requires schema.prisma to resolve foreign keys`;
 
+    if (schema) {
+      const keys = schema.getForeignKey(baseTable, relation);
+      if (keys) {
+        localKey = keys.local;
+        foreignKey = keys.foreign;
+        warning = undefined;
+      }
+    }
+
+    joins.push({
+      table: relation,
+      localKey,
+      foreignKey,
+      type: "LEFT",
+      warning
+    });
   });
 
   return joins;
-
 }

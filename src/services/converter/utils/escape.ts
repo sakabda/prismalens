@@ -1,16 +1,29 @@
+// ============================================
+// SQL Value Escaping — Single Source of Truth
+// ============================================
+
+/**
+ * Escape and quote a value for safe SQL embedding.
+ *
+ * This is the ONLY quote/escape function in the
+ * codebase. All builders must import from here.
+ */
 export function escapeValue(value: unknown): string {
-  if (value === null) return "NULL";
+  if (value === null || value === undefined) {
+    return "NULL";
+  }
 
-  if (value === undefined) return "NULL";
+  if (typeof value === "number") {
+    return String(value);
+  }
 
-  if (typeof value === "number")
-    return value.toString();
-
-  if (typeof value === "boolean")
+  if (typeof value === "boolean") {
     return value ? "TRUE" : "FALSE";
+  }
 
-  if (value instanceof Date)
+  if (value instanceof Date) {
     return `'${value.toISOString()}'`;
+  }
 
   if (Array.isArray(value)) {
     return (
@@ -24,3 +37,9 @@ export function escapeValue(value: unknown): string {
     .replace(/'/g, "''")
     .replace(/\\/g, "\\\\")}'`;
 }
+
+/**
+ * Alias for `escapeValue`.
+ * Use whichever name reads better at the call site.
+ */
+export const quote = escapeValue;

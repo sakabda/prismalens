@@ -97,8 +97,8 @@ export function analyzeQuery(ast: PrismaQueryAST | null): QueryAnalysis {
 
   const { args, operation } = ast;
   const conditions = countConditions(args.where);
-  const joins = countJoins(args);
-  const tables = countTables(args);
+  const joins = countJoins(args as unknown as Record<string, unknown>);
+  const tables = countTables(args as unknown as Record<string, unknown>);
   const nestedDepth = countDepth(args.where);
   const hasTake = typeof args.take === "number";
   const hasSelect = !!args.select;
