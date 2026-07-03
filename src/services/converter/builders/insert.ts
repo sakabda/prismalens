@@ -1,14 +1,4 @@
-function quote(value: unknown): string {
-  if (value === null) return "NULL";
-
-  if (typeof value === "number")
-    return value.toString();
-
-  if (typeof value === "boolean")
-    return value ? "TRUE" : "FALSE";
-
-  return `'${String(value).replace(/'/g, "''")}'`;
-}
+import { quote } from "../utils/escape";
 
 export function buildInsert(
   table: string,
