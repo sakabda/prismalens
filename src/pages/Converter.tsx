@@ -112,16 +112,7 @@ export default function Converter() {
     setAst(null);
   }, []);
 
-  // const handleSaveSnippet = useCallback(() => {
-  //   if (!input.trim()) {
-  //     toast.error("Nothing to save");
-  //     return;
-  //   }
-  //   const name = prompt("Snippet name:");
-  //   if (!name?.trim()) return;
-  //   saveSnippet(name.trim(), input, mode);
-  //   toast.success("Snippet saved");
-  // }, [input, mode]);
+
   const handleSaveSnippet = useCallback(() => {
   if (!input.trim()) {
     toast.error("Nothing to save");
@@ -224,7 +215,7 @@ export default function Converter() {
               className="hidden shrink-0 overflow-hidden lg:block"
             >
               <Card className="h-115 overflow-hidden">
-                <ExampleSidebar onSelect={handleExampleSelect} />
+                <ExampleSidebar onSelect={handleExampleSelect} direction={mode} />
               </Card>
             </motion.aside>
           )}

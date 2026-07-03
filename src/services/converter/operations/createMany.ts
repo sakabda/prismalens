@@ -1,0 +1,32 @@
+export function buildCreateMany(
+  model: string,
+  args: Record<string, any>,
+) {
+  const rows = args.data ?? [];
+
+  if (!Array.isArray(rows) || rows.length === 0)
+    return "-- Invalid createMany";
+
+  const columns = Object.keys(rows[0]);
+
+  const values = rows
+    .map((row: any) =>
+      "(" +
+      columns
+        .map((c) =>
+          typeof row[c] === "string"
+            ? `'${row[c]}'`
+            : row[c]
+        )
+        .join(", ") +
+      ")"
+    )
+    .join(",\n");
+
+  return `
+INSERT INTO ${model}
+(${columns.join(", ")})
+VALUES
+${values};
+`.trim();
+}
