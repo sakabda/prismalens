@@ -1,13 +1,28 @@
-import type { PrismaQueryAST } from "./types";
 import { tokenize } from "./tokenizer";
 import { ASTBuilder } from "./ast-builder";
 
-export function parsePrismaQuery(input: string): PrismaQueryAST | null {
+import type { QueryNode } from "./ast/prisma";
+
+export function parsePrismaQuery(
+  input: string,
+): QueryNode | null {
+
   try {
     const tokens = tokenize(input);
+
+    console.log(JSON.stringify(tokens, null, 2));
+
     const builder = new ASTBuilder(tokens);
-    return builder.build();
+
+    const ast = builder.build();
+
+    console.log("AST");
+    console.log(ast);
+
+    return ast;
+
   } catch (e) {
+    console.error(e);
     return null;
   }
 }

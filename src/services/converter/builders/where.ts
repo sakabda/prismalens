@@ -1,15 +1,43 @@
-import { quote } from "../utils/escape";
+import { buildExpression } from "./expression";
+import { buildValue } from "./value";
 
+/* ----------------------------
+   STRICT AST DETECTION
+---------------------------- */
+function isExpressionNode(value: any): boolean {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  return [
+    "Literal",
+    "Identifier",
+    "CallExpression",
+    "MemberExpression",
+    "ArrayExpression",
+    "NewExpression",
+  ].includes(value.type);
+}
+
+/* ----------------------------
+   FIELD CONDITION BUILDER
+---------------------------- */
 function buildFieldCondition(
   field: string,
   value: any,
 ): string {
+  // Expression AST (uuid(), now(), etc.)
+  if (isExpressionNode(value)) {
+    return `${field} = ${buildExpression(value)}`;
+  }
+
+  // Primitive value
   if (
     value === null ||
     typeof value !== "object" ||
     Array.isArray(value)
   ) {
-    return `${field} = ${quote(value)}`;
+    return `${field} = ${buildValue(value)}`;
   }
 
   const conditions: string[] = [];
@@ -20,62 +48,62 @@ function buildFieldCondition(
     switch (operator) {
       case "equals":
         conditions.push(
-          `${field} = ${quote(operatorValue)}`
+          `${field} = ${buildValue(operatorValue)}`
         );
         break;
 
       case "not":
         conditions.push(
-          `${field} <> ${quote(operatorValue)}`
+          `${field} <> ${buildValue(operatorValue)}`
         );
         break;
 
       case "gt":
         conditions.push(
-          `${field} > ${quote(operatorValue)}`
+          `${field} > ${buildValue(operatorValue)}`
         );
         break;
 
       case "gte":
         conditions.push(
-          `${field} >= ${quote(operatorValue)}`
+          `${field} >= ${buildValue(operatorValue)}`
         );
         break;
 
       case "lt":
         conditions.push(
-          `${field} < ${quote(operatorValue)}`
+          `${field} < ${buildValue(operatorValue)}`
         );
         break;
 
       case "lte":
         conditions.push(
-          `${field} <= ${quote(operatorValue)}`
+          `${field} <= ${buildValue(operatorValue)}`
         );
         break;
 
       case "contains":
         conditions.push(
-          `${field} LIKE '%${operatorValue}%'`
+          `${field} LIKE '%' || ${buildValue(operatorValue)} || '%'`
         );
         break;
 
       case "startsWith":
         conditions.push(
-          `${field} LIKE '${operatorValue}%'`
+          `${field} LIKE ${buildValue(operatorValue)} || '%'`
         );
         break;
 
       case "endsWith":
         conditions.push(
-          `${field} LIKE '%${operatorValue}'`
+          `${field} LIKE '%' || ${buildValue(operatorValue)}`
         );
         break;
 
       case "in":
         conditions.push(
           `${field} IN (${operatorValue
-            .map(quote)
+            .map(buildValue)
             .join(", ")})`
         );
         break;
@@ -83,62 +111,91 @@ function buildFieldCondition(
       case "notIn":
         conditions.push(
           `${field} NOT IN (${operatorValue
-            .map(quote)
+            .map(buildValue)
             .join(", ")})`
         );
         break;
+
+      default:
+        throw new Error(
+          `Unsupported operator "${operator}"`
+        );
     }
   }
 
   return conditions.join(" AND ");
 }
 
-export function buildWhere(where?: Record<string, any>): string {
-  if (!where || Object.keys(where).length === 0)
+/* ----------------------------
+   WHERE BUILDER
+---------------------------- */
+export function buildWhere(
+  where?: Record<string, any>,
+): string {
+  if (
+    !where ||
+    Object.keys(where).length === 0
+  ) {
     return "";
+  }
+
+  // Handle AST ObjectExpression directly
+  if (
+    where.type === "ObjectExpression" &&
+    Array.isArray(where.properties)
+  ) {
+    const converted: Record<string, any> = {};
+
+    for (const prop of where.properties) {
+      converted[prop.key.name] = prop.value;
+    }
+
+    where = converted;
+  }
 
   const parts: string[] = [];
 
-  for (const key of Object.keys(where)) {
+  for (const [key, value] of Object.entries(where)) {
     if (key === "AND") {
-      const sql = where.AND.map(buildWhere)
-        .map((x: string) => x.replace(/^WHERE\s+/i, ""))
+      const sql = value
+        .map(buildWhere)
+        .map((x: string) =>
+          x.replace(/^\s*WHERE\s+/i, "")
+        )
         .join(" AND ");
 
       parts.push(`(${sql})`);
-
       continue;
     }
 
     if (key === "OR") {
-      const sql = where.OR.map(buildWhere)
-        .map((x: string) => x.replace(/^WHERE\s+/i, ""))
+      const sql = value
+        .map(buildWhere)
+        .map((x: string) =>
+          x.replace(/^\s*WHERE\s+/i, "")
+        )
         .join(" OR ");
 
       parts.push(`(${sql})`);
-
       continue;
     }
 
     if (key === "NOT") {
-      const sql = buildWhere(where.NOT)
-        .replace(/^WHERE\s+/i, "");
+      const sql = buildWhere(value).replace(
+        /^\s*WHERE\s+/i,
+        "",
+      );
 
       parts.push(`NOT (${sql})`);
-
       continue;
     }
 
     parts.push(
-      buildFieldCondition(
-        key,
-        where[key],
-      ),
+      buildFieldCondition(key, value),
     );
   }
 
- 
   return parts.length
-  ? ` WHERE ${parts.join(" AND ")}`
-  : "";
+    ? ` WHERE ${parts.join(" AND ")}`
+    : "";
 }

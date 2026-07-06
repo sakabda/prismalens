@@ -1,25 +1,20 @@
+import { buildValue } from "../builders/value";
+
 export function buildCreateMany(
   model: string,
   args: Record<string, any>,
 ) {
   const rows = args.data ?? [];
 
-  if (!Array.isArray(rows) || rows.length === 0)
+  if (!Array.isArray(rows) || rows.length === 0) {
     return "-- Invalid createMany";
+  }
 
   const columns = Object.keys(rows[0]);
 
   const values = rows
-    .map((row: any) =>
-      "(" +
-      columns
-        .map((c) =>
-          typeof row[c] === "string"
-            ? `'${row[c]}'`
-            : row[c]
-        )
-        .join(", ") +
-      ")"
+    .map((row) =>
+      `(${columns.map((c) => buildValue(row[c])).join(", ")})`
     )
     .join(",\n");
 

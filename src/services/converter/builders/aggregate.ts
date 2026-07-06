@@ -1,20 +1,22 @@
 export function buildAggregate(
   aggregate?: Record<string, any>,
 ): string {
-
-  if (!aggregate) return "";
+  if (!aggregate) {
+    return "";
+  }
 
   const sql: string[] = [];
 
-  Object.entries(aggregate).forEach(([key, value]) => {
+  for (const [key, value] of Object.entries(aggregate)) {
+    if (
+      !value ||
+      typeof value !== "object"
+    ) {
+      continue;
+    }
 
-    if (typeof value !== "object")
-      return;
-
-    Object.keys(value).forEach((field) => {
-
+    for (const field of Object.keys(value)) {
       switch (key) {
-
         case "_count":
           sql.push(`COUNT(${field}) AS count_${field}`);
           break;
@@ -34,13 +36,9 @@ export function buildAggregate(
         case "_max":
           sql.push(`MAX(${field}) AS max_${field}`);
           break;
-
       }
-
-    });
-
-  });
+    }
+  }
 
   return sql.join(", ");
-
 }

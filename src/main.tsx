@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 
 import "./index.css";
 import { router } from "./router";
+// import "./services/converter/test-parser";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

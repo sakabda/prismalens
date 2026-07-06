@@ -1,9 +1,10 @@
 import type { Token, TokenType } from "./types";
 
 const KEYWORDS = new Set([
-  "true",
+ "true",
   "false",
   "null",
+  "new",
 ]);
 
 function isLetter(ch: string) {
@@ -171,11 +172,25 @@ export function tokenize(input: string): Token[] {
       if (KEYWORDS.has(value)) {
         let type: TokenType = "keyword";
 
-        if (value === "true" || value === "false")
-          type = "boolean";
+        // if (value === "true" || value === "false")
+        //   type = "boolean";
 
-        if (value === "null")
-          type = "null";
+        // if (value === "null")
+        //   type = "null";
+        switch (value) {
+          case "true":
+          case "false":
+            type = "boolean";
+            break;
+
+          case "null":
+            type = "null";
+            break;
+
+          case "new":
+            type = "keyword_new";
+            break;
+        }
 
         tokens.push({
           type,

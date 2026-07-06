@@ -5,15 +5,16 @@ export function buildUpsert(
   model: string,
   args: Record<string, any>,
 ) {
+  const insertSql = buildInsert(model, args.create);
   const updateClause = buildUpdateSet(args.update);
 
   return `
 -- UPSERT
 
-${buildInsert(model, args.create)}
+${insertSql}
 
 ON CONFLICT
 DO UPDATE
 SET ${updateClause};
-`;
+`.trim();
 }

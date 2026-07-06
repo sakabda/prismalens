@@ -184,34 +184,71 @@ export class PrismaValidator {
         continue;
       }
 
-      if (
-        value !== null &&
-        typeof value === "object" &&
-        !Array.isArray(value)
-      ) {
-        for (const operator of Object.keys(value)) {
-          const supported = [
-            "equals",
-            "not",
-            "in",
-            "notIn",
-            "lt",
-            "lte",
-            "gt",
-            "gte",
-            "contains",
-            "startsWith",
-            "endsWith",
-            "mode",
-          ];
+      // if (
+      //   value !== null &&
+      //   typeof value === "object" &&
+      //  '! 'Array.isArray(value)
+      // ) {
+      //   for (const operator of Object.keys(value)) {
+      //     const supported = [
+      //       "equals",
+      //       "not",
+      //       "in",
+      //       "notIn",
+      //       "lt",
+      //       "lte",
+      //       "gt",
+      //       "gte",
+      //       "contains",
+      //       "startsWith",
+      //       "endsWith",
+      //       "mode",
+      //     ];
 
-          if (!supported.includes(operator)) {
-            errors.push(
-              `${path}.${key}: Unsupported operator "${operator}".`,
-            );
-          }
-        }
-      }
+      //     if (!supported.includes(operator)) {
+      //       errors.push(
+      //         `${path}.${key}: Unsupported operator "${operator}".`,
+      //       );
+      //     }
+      //   }
+      // }
+
+      if (
+  value !== null &&
+  typeof value === "object" &&
+  !Array.isArray(value)
+) {
+  // -----------------------------------------
+  // AST Expression Node
+  // -----------------------------------------
+
+  if ("type" in value) {
+    continue;
+  }
+
+  const supported = [
+    "equals",
+    "not",
+    "in",
+    "notIn",
+    "lt",
+    "lte",
+    "gt",
+    "gte",
+    "contains",
+    "startsWith",
+    "endsWith",
+    "mode",
+  ];
+
+  for (const operator of Object.keys(value)) {
+    if (!supported.includes(operator)) {
+      errors.push(
+        `${path}.${key}: Unsupported operator "${operator}".`,
+      );
+    }
+  }
+}
     }
   }
 }
