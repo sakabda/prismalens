@@ -26,6 +26,7 @@ export type PrismaOperation =
 export type TokenType =
   | "identifier"
   | "keyword"
+  | "keyword_new"
   | "string"
   | "number"
   | "boolean"
