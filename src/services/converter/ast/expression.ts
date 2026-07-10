@@ -1,25 +1,48 @@
-/* ==========================================
- * Expression AST
- * ========================================== */
+/* ===========================================
+ * Prisma Expression AST
+ * =========================================== */
+
+export type ExpressionNode =
+  | IdentifierNode
+  | LiteralNode
+  | ObjectExpressionNode
+  | PropertyNode
+  | ArrayExpressionNode
+  | MemberExpressionNode
+  | UnaryExpressionNode
+  | BinaryExpressionNode
+  | CallExpressionNode;
+
+/* =====================================================
+ * Identifier
+ * ===================================================== */
 
 export interface IdentifierNode {
   type: "Identifier";
   name: string;
 }
 
+/* =====================================================
+ * Literal
+ * ===================================================== */
+
 export interface LiteralNode {
   type: "Literal";
-  value:
-    | string
-    | number
-    | boolean
-    | null;
+  value: unknown;
 }
+
+/* =====================================================
+ * Object
+ * ===================================================== */
 
 export interface ObjectExpressionNode {
   type: "ObjectExpression";
   properties: PropertyNode[];
 }
+
+/* =====================================================
+ * Property
+ * ===================================================== */
 
 export interface PropertyNode {
   type: "Property";
@@ -27,9 +50,44 @@ export interface PropertyNode {
   value: ExpressionNode;
 }
 
+/* =====================================================
+ * Array
+ * ===================================================== */
+
 export interface ArrayExpressionNode {
   type: "ArrayExpression";
   elements: ExpressionNode[];
+}
+
+/* =====================================================
+ * Unary
+ * ===================================================== */
+
+export interface UnaryExpressionNode {
+  type: "UnaryExpression";
+  operator: string;
+  argument: ExpressionNode;
+}
+
+/* =====================================================
+ * Binary
+ * ===================================================== */
+
+export interface BinaryExpressionNode {
+  type: "BinaryExpression";
+  operator: string;
+  left: ExpressionNode;
+  right: ExpressionNode;
+}
+
+/* =====================================================
+ * Function Call
+ * ===================================================== */
+
+export interface CallExpressionNode {
+  type: "CallExpression";
+  callee: IdentifierNode;
+  arguments: ExpressionNode[];
 }
 
 export interface MemberExpressionNode {
@@ -39,28 +97,3 @@ export interface MemberExpressionNode {
 
   property: IdentifierNode;
 }
-
-export interface CallExpressionNode {
-  type: "CallExpression";
-
-  callee: ExpressionNode;
-
-  arguments: ExpressionNode[];
-}
-
-export interface NewExpressionNode {
-  type: "NewExpression";
-
-  callee: ExpressionNode;
-
-  arguments: ExpressionNode[];
-}
-
-export type ExpressionNode =
-  | IdentifierNode
-  | LiteralNode
-  | ObjectExpressionNode
-  | ArrayExpressionNode
-  | MemberExpressionNode
-  | CallExpressionNode
-  | NewExpressionNode;

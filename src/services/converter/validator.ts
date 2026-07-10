@@ -1,8 +1,5 @@
-import type {
-  PrismaOrderBy,
-  PrismaQueryAST,
-  PrismaWhere,
-} from "./types";
+import type { QueryNode } from "./ast/prisma";
+import type { PrismaOrderBy, PrismaWhere } from "./types";
 
 export interface ValidationResult {
   valid: boolean;
@@ -10,7 +7,7 @@ export interface ValidationResult {
 }
 
 export class PrismaValidator {
-  validate(ast: PrismaQueryAST): ValidationResult {
+  validate(ast: QueryNode): ValidationResult {
     const errors: string[] = [];
 
     this.validateModel(ast, errors);
@@ -27,23 +24,13 @@ export class PrismaValidator {
     };
   }
 
-  // -----------------------------------------
-
-  private validateModel(
-    ast: PrismaQueryAST,
-    errors: string[],
-  ): void {
-    if (!ast.model.trim()) {
+  private validateModel(ast: QueryNode, errors: string[]) {
+    if (!ast.model?.trim()) {
       errors.push("Model name is required.");
     }
   }
 
-  // -----------------------------------------
-
-  private validateOperation(
-    ast: PrismaQueryAST,
-    errors: string[],
-  ): void {
+  private validateOperation(ast: QueryNode, errors: string[]) {
     const operations = [
       "findMany",
       "findFirst",
@@ -67,188 +54,88 @@ export class PrismaValidator {
     }
   }
 
-  // -----------------------------------------
+  private validateTake(ast: QueryNode, errors: string[]) {
+    const take = ast.args.take;
 
-  private validateTake(
-    ast: PrismaQueryAST,
-    errors: string[],
-  ): void {
-    if (
-      ast.args.take !== undefined &&
-      (!Number.isInteger(ast.args.take) ||
-        ast.args.take < 0)
-    ) {
+    if (take !== undefined && (!Number.isInteger(take) || take < 0)) {
       errors.push("take must be a positive integer.");
     }
   }
 
-  // -----------------------------------------
+  private validateSkip(ast: QueryNode, errors: string[]) {
+    const skip = ast.args.skip;
 
-  private validateSkip(
-    ast: PrismaQueryAST,
-    errors: string[],
-  ): void {
-    if (
-      ast.args.skip !== undefined &&
-      (!Number.isInteger(ast.args.skip) ||
-        ast.args.skip < 0)
-    ) {
+    if (skip !== undefined && (!Number.isInteger(skip) || skip < 0)) {
       errors.push("skip must be a positive integer.");
     }
   }
 
-  // -----------------------------------------
+  private validateSelect(ast: QueryNode, errors: string[]) {
+    const select = ast.args.select;
+    if (!select) return;
 
-  private validateSelect(
-    ast: PrismaQueryAST,
-    errors: string[],
-  ): void {
-    if (!ast.args.select) {
-      return;
-    }
-
-    for (const [field, value] of Object.entries(ast.args.select)) {
+    for (const [field, value] of Object.entries(select)) {
       if (typeof value !== "boolean") {
-        errors.push(
-          `select.${field} must be true or false.`,
-        );
+        errors.push(`select.${field} must be true or false.`);
       }
     }
   }
 
-  // -----------------------------------------
+  private validateOrderBy(ast: QueryNode, errors: string[]) {
+    const orderBy = ast.args.orderBy;
+    if (!orderBy) return;
 
-  private validateOrderBy(
-    ast: PrismaQueryAST,
-    errors: string[],
-  ): void {
-    if (!ast.args.orderBy) {
-      return;
-    }
-
-    const items = Array.isArray(ast.args.orderBy)
-      ? ast.args.orderBy
-      : [ast.args.orderBy];
+    const items = Array.isArray(orderBy) ? orderBy : [orderBy];
 
     for (const item of items) {
-      this.validateOrderItem(item, errors);
-    }
-  }
-
-  private validateOrderItem(
-    item: PrismaOrderBy,
-    errors: string[],
-  ): void {
-    for (const [field, direction] of Object.entries(item)) {
-      if (
-        direction !== "asc" &&
-        direction !== "desc"
-      ) {
-        errors.push(
-          `orderBy.${field} must be "asc" or "desc".`,
-        );
+      for (const [field, direction] of Object.entries(item)) {
+        if (direction !== "asc" && direction !== "desc") {
+          errors.push(`orderBy.${field} must be asc or desc.`);
+        }
       }
     }
   }
 
-  // -----------------------------------------
-
-  private validateWhere(
-    where: PrismaWhere | undefined,
-    errors: string[],
-    path = "where",
-  ): void {
-    if (!where) {
-      return;
-    }
+  private validateWhere(where: PrismaWhere | undefined, errors: string[], path = "where") {
+    if (!where) return;
 
     for (const [key, value] of Object.entries(where)) {
-      if (
-        key === "AND" ||
-        key === "OR" ||
-        key === "NOT"
-      ) {
+      if (key === "AND" || key === "OR" || key === "NOT") {
         if (!Array.isArray(value)) {
           errors.push(`${path}.${key} must be an array.`);
           continue;
         }
 
-        value.forEach((condition, index) => {
-          this.validateWhere(
-            condition,
-            errors,
-            `${path}.${key}[${index}]`,
-          );
-        });
-
+        value.forEach((v, i) =>
+          this.validateWhere(v, errors, `${path}.${key}[${i}]`)
+        );
         continue;
       }
 
-      // if (
-      //   value !== null &&
-      //   typeof value === "object" &&
-      //  '! 'Array.isArray(value)
-      // ) {
-      //   for (const operator of Object.keys(value)) {
-      //     const supported = [
-      //       "equals",
-      //       "not",
-      //       "in",
-      //       "notIn",
-      //       "lt",
-      //       "lte",
-      //       "gt",
-      //       "gte",
-      //       "contains",
-      //       "startsWith",
-      //       "endsWith",
-      //       "mode",
-      //     ];
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        if ("type" in value) continue;
 
-      //     if (!supported.includes(operator)) {
-      //       errors.push(
-      //         `${path}.${key}: Unsupported operator "${operator}".`,
-      //       );
-      //     }
-      //   }
-      // }
+        const supported = [
+          "equals",
+          "not",
+          "in",
+          "notIn",
+          "lt",
+          "lte",
+          "gt",
+          "gte",
+          "contains",
+          "startsWith",
+          "endsWith",
+          "mode",
+        ];
 
-      if (
-  value !== null &&
-  typeof value === "object" &&
-  !Array.isArray(value)
-) {
-  // -----------------------------------------
-  // AST Expression Node
-  // -----------------------------------------
-
-  if ("type" in value) {
-    continue;
-  }
-
-  const supported = [
-    "equals",
-    "not",
-    "in",
-    "notIn",
-    "lt",
-    "lte",
-    "gt",
-    "gte",
-    "contains",
-    "startsWith",
-    "endsWith",
-    "mode",
-  ];
-
-  for (const operator of Object.keys(value)) {
-    if (!supported.includes(operator)) {
-      errors.push(
-        `${path}.${key}: Unsupported operator "${operator}".`,
-      );
-    }
-  }
-}
+        for (const op of Object.keys(value)) {
+          if (!supported.includes(op)) {
+            errors.push(`${path}.${key}: Unsupported operator "${op}".`);
+          }
+        }
+      }
     }
   }
 }

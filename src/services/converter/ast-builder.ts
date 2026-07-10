@@ -12,7 +12,6 @@ import type {
   PropertyNode,
   ArrayExpressionNode,
   IdentifierNode,
-  MemberExpressionNode,
   CallExpressionNode,
 } from "./ast/expression";
 
@@ -47,73 +46,44 @@ constructor(tokens: Token[]) {
 
   this.expect("paren_open");
 
-  let args: ObjectExpressionNode = {
-    type: "ObjectExpression",
-    properties: [],
-  };
+const argsNode: ObjectExpressionNode = {
+  type: "ObjectExpression",
+  properties: [],
+};
 
-  if (
-    this.peek()?.type !== "paren_close"
-  ) {
-    args =
-      this.parseObjectExpression();
-  }
+let args = argsNode;
 
-  this.expect("paren_close");
-
-  return {
-    type: "Query",
-    model,
-    operation,
-    args: this.objectToArguments(args),
-  };
+if (this.peek()?.type !== "paren_close") {
+  args = this.parseObjectExpression();
 }
 
+this.expect("paren_close");
+
+return {
+  type: "Query",
+  model,
+  operation,
+  args: this.objectToArguments(args),
+};
+}
+
+
   
-//   private objectToArguments(
-//   node: ObjectExpressionNode,
-// ): any {
-
-//   const result: Record<string, any> = {};
-
-//   for (const property of node.properties) {
-
-//     result[property.key.name] =
-//       property.value;
-
-//   }
-
-//   return result;
-  //   }
-  
-  private objectToArguments(node: ObjectExpressionNode): any {
-  const result: Record<string, any> = {};
+private objectToArguments(
+  node: ObjectExpressionNode,
+): QueryNode["args"] {
+  const args: Partial<QueryNode["args"]> = {};
 
   for (const property of node.properties) {
-    result[property.key.name] = this.normalizeExpression(property.value);
+    const key = property.key.name as keyof QueryNode["args"];
+
+    args[key] = property.value as never;
   }
 
-  return result;
+  return args as QueryNode["args"];
 }
 
-private normalizeExpression(node: ExpressionNode): any {
-  if (node.type === "ObjectExpression") {
-    const obj: Record<string, any> = {};
 
-    for (const prop of node.properties) {
-      obj[prop.key.name] = this.normalizeExpression(prop.value);
-    }
-
-    return obj;
-  }
-
-  if (node.type === "ArrayExpression") {
-    return node.elements.map((el) => this.normalizeExpression(el));
-  }
-
-  // Leave CallExpression, Literal, Identifier, etc. unchanged
-  return node;
-}
   
   private parseExpression(): ExpressionNode {
 

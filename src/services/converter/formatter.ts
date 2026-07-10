@@ -1,60 +1,104 @@
-import type { PrismaQueryAST } from "./types";
-import { PrismaGenerator } from "./prisma-generator";
-import { SQLGenerator } from "./sql-generator";
+import { ASTBuilder } from "./ast-builder";
+
+import { Planner } from "./planner";
+import { PlanningContext } from "./planner/context";
+
+import type {
+  PlannerHandler,
+} from "./planner/types";
+
+import { SQLFormatter } from "./formatter/sql";
+
+import type {
+  Token,
+} from "./types";
+
+import type {
+  QueryNode,
+} from "./ast/prisma";
+
+
 
 export class QueryFormatter {
-  private prismaGenerator = new PrismaGenerator();
-  private sqlGenerator = new SQLGenerator();
 
-  /**
-   * Format a Prisma AST into a nicely formatted Prisma query.
-   */
-  formatPrisma(ast: PrismaQueryAST): string {
-    return this.prismaGenerator.generate(ast);
+
+  private readonly planner: Planner;
+
+  private readonly formatter =
+    new SQLFormatter();
+
+
+
+  constructor(
+    handlers: readonly PlannerHandler[],
+    context: PlanningContext,
+  ) {
+
+    this.planner =
+      new Planner(
+        handlers,
+        context,
+      );
+
   }
 
-  /**
-   * Format a Prisma AST into SQL.
-   */
-  formatSQL(ast: PrismaQueryAST): string {
-    return this.sqlGenerator.generate(ast);
+
+
+
+
+  formatSQLFromTokens(
+    tokens: Token[],
+  ): string {
+
+
+    const ast =
+      new ASTBuilder(
+        tokens,
+      ).build();
+
+
+
+    if (!ast) {
+
+      return "-- Invalid query";
+
+    }
+
+
+
+    const sqlNode =
+      this.planner.plan(
+        ast,
+      );
+
+
+
+    return this.formatter.format(
+      sqlNode,
+    );
+
   }
 
-  /**
-   * Format raw SQL by adding indentation and line breaks.
-   */
-  formatRawSQL(sql: string): string {
-    return sql
-      .replace(/\s+/g, " ")
-      .replace(/\bSELECT\b/gi, "SELECT")
-      .replace(/\bFROM\b/gi, "\nFROM")
-      .replace(/\bWHERE\b/gi, "\nWHERE")
-      .replace(/\bGROUP BY\b/gi, "\nGROUP BY")
-      .replace(/\bHAVING\b/gi, "\nHAVING")
-      .replace(/\bORDER BY\b/gi, "\nORDER BY")
-      .replace(/\bLIMIT\b/gi, "\nLIMIT")
-      .replace(/\bOFFSET\b/gi, "\nOFFSET")
-      .replace(/\bINNER JOIN\b/gi, "\nINNER JOIN")
-      .replace(/\bLEFT JOIN\b/gi, "\nLEFT JOIN")
-      .replace(/\bRIGHT JOIN\b/gi, "\nRIGHT JOIN")
-      .replace(/\bVALUES\b/gi, "\nVALUES")
-      .trim();
+
+
+
+
+  formatSQLFromAST(
+    ast: QueryNode,
+  ): string {
+
+
+    const sqlNode =
+      this.planner.plan(
+        ast,
+      );
+
+
+
+    return this.formatter.format(
+      sqlNode,
+    );
+
   }
 
-  /**
-   * Compact SQL (single line).
-   */
-  compactSQL(sql: string): string {
-    return sql.replace(/\s+/g, " ").trim();
-  }
-
-  /**
-   * Compact Prisma query.
-   */
-  compactPrisma(ast: PrismaQueryAST): string {
-    return this.formatPrisma(ast)
-      .replace(/\n/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
 }

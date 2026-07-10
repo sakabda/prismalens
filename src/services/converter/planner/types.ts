@@ -1,83 +1,17 @@
 import type {
-  ObjectExpressionNode,
-} from "../ast/expression";
+  QueryNode,
+  PrismaOperation,
+} from "../ast/prisma";
 
-export interface QueryPlan {
-  operation:
-    | "SELECT"
-    | "INSERT"
-    | "UPDATE"
-    | "DELETE";
+import type { SqlStatement } from "../ast/sql";
 
-  table: string;
+import type { PlanningContext } from "./context";
 
-  select?: SelectPlan;
+export interface PlannerHandler {
+  readonly operation: PrismaOperation;
 
-  insert?: InsertPlan;
-
-  update?: UpdatePlan;
-
-  delete?: DeletePlan;
-}
-
-export interface SelectPlan {
-  columns: ColumnPlan[];
-
-  joins: JoinPlan[];
-
-  where?: ObjectExpressionNode;
-
-  orderBy: OrderPlan[];
-
-  groupBy: string[];
-
-  having?: ObjectExpressionNode;
-
-  limit?: number;
-
-  offset?: number;
-
-  distinct: boolean;
-}
-
-export interface InsertPlan {
-  rows: Record<string, unknown>[];
-}
-
-export interface UpdatePlan {
-  values: Record<string, unknown>;
-
-  where?: ObjectExpressionNode;
-}
-
-export interface DeletePlan {
-  where?: ObjectExpressionNode;
-}
-
-export interface ColumnPlan {
-  expression: string;
-
-  alias?: string;
-}
-
-export interface JoinPlan {
-  table: string;
-
-  type: "LEFT" | "INNER";
-
-  localField: string;
-
-  foreignField: string;
-
-  where?: ObjectExpressionNode;
-
-  select?: ObjectExpressionNode;
-
-  includeCount?: boolean;
-}
-
-export interface OrderPlan {
-  field: string;
-
-  direction: "ASC" | "DESC";
+  plan(
+    query: QueryNode,
+    context: PlanningContext,
+  ): SqlStatement;
 }

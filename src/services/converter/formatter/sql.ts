@@ -1,139 +1,347 @@
 import type {
-  SelectStatementNode,
-  ConditionNode,
-} from "../sql-ast";
+  SqlNode,
+  SqlStatement,
+  SqlSelectStatement,
+  SqlInsertStatement,
+  SqlUpdateStatement,
+  SqlDeleteStatement,
+} from "../ast/sql";
 
-export class SqlFormatter {
+
+import type {
+  SqlExpression,
+} from "../ast/sql/expression";
+
+
+
+export class SQLFormatter {
+
+
   format(
-    statement: SelectStatementNode,
+    ast: SqlNode,
   ): string {
-    const lines: string[] = [];
 
-    lines.push(
-      this.formatSelect(statement),
-    );
 
-    lines.push(
-      this.formatFrom(statement),
-    );
+    if (!this.isStatement(ast)) {
 
-    if (statement.joins.length) {
-      lines.push(
-        this.formatJoins(statement),
+      throw new Error(
+        "SQLFormatter received an expression instead of a SQL statement.",
       );
+
     }
 
-    if (statement.where) {
-      lines.push(
-        this.formatWhere(statement),
-      );
+
+    const statement: SqlStatement = ast;
+
+
+
+    switch(statement.type) {
+
+
+      case "SelectStatement":
+
+        return this.formatSelect(
+          statement,
+        );
+
+
+      case "InsertStatement":
+
+        return this.formatInsert(
+          statement,
+        );
+
+
+      case "UpdateStatement":
+
+        return this.formatUpdate(
+          statement,
+        );
+
+
+      case "DeleteStatement":
+
+        return this.formatDelete(
+          statement,
+        );
+
+
+      default:
+
+        throw new Error(
+          "Unsupported SQL statement.",
+        );
+
     }
 
-    if (statement.groupBy) {
-      lines.push(
-        this.formatGroupBy(statement),
-      );
-    }
-
-    if (statement.orderBy) {
-      lines.push(
-        this.formatOrderBy(statement),
-      );
-    }
-
-    if (statement.limit) {
-      lines.push(
-        `LIMIT ${statement.limit.value}`,
-      );
-    }
-
-    if (statement.offset) {
-      lines.push(
-        `OFFSET ${statement.offset.value}`,
-      );
-    }
-
-    return lines.join("\n") + ";";
   }
+
+
+
+
+
+  private isStatement(
+    node: SqlNode,
+  ): node is SqlStatement {
+
+    return (
+      node.type === "SelectStatement" ||
+      node.type === "InsertStatement" ||
+      node.type === "UpdateStatement" ||
+      node.type === "DeleteStatement"
+    );
+
+  }
+
+
+
+
 
   private formatSelect(
-    statement: SelectStatementNode,
+    ast: SqlSelectStatement,
   ): string {
-    if (
-      statement.projection.includeAll
-    ) {
-      return "SELECT *";
+
+
+    const sql:string[] = [];
+
+
+    sql.push(
+      `SELECT ${
+        ast.columns.length
+          ? ast.columns.join(", ")
+          : "*"
+      }`,
+    );
+
+
+    sql.push(
+      `FROM ${ast.table}`,
+    );
+
+
+    if(ast.where) {
+
+      sql.push(
+        `WHERE ${this.expr(ast.where)}`,
+      );
+
     }
 
-    return `SELECT ${statement.projection.fields.join(", ")}`;
+
+    if(ast.orderBy?.length) {
+
+      sql.push(
+        `ORDER BY ${
+          ast.orderBy
+            .map(
+              order =>
+                `${order.column} ${
+                  order.direction ?? "ASC"
+                }`,
+            )
+            .join(", ")
+        }`,
+      );
+
+    }
+
+
+    if(ast.limit !== undefined) {
+
+      sql.push(
+        `LIMIT ${ast.limit}`,
+      );
+
+    }
+
+
+    return sql.join("\n") + ";";
+
   }
 
-  private formatFrom(
-    statement: SelectStatementNode,
+
+
+
+
+  private formatInsert(
+    ast: SqlInsertStatement,
   ): string {
-    return `FROM ${statement.from.table}`;
+
+
+    return `
+INSERT INTO ${ast.table}
+(${ast.columns.join(", ")})
+VALUES
+(
+${ast.values
+  .map(value => this.expr(value))
+  .join(",\n")}
+);
+`.trim();
+
   }
 
-  private formatJoins(
-    statement: SelectStatementNode,
+
+
+
+
+  private formatUpdate(
+    ast: SqlUpdateStatement,
   ): string {
-    return statement.joins
-      .map(
-        (join) =>
-          `${join.type} JOIN ${join.table}
-ON ${join.on.left} = ${join.on.right}`,
-      )
-      .join("\n");
+
+
+    const set =
+      Object.entries(ast.values)
+        .map(
+          ([key,value]) =>
+            `${key} = ${this.expr(value)}`,
+        )
+        .join(", ");
+
+
+
+    return `
+UPDATE ${ast.table}
+SET ${set}
+${
+  ast.where
+    ? `WHERE ${this.expr(ast.where)}`
+    : ""
+};
+`.trim();
+
   }
 
-  private formatWhere(
-    statement: SelectStatementNode,
+
+
+
+
+  private formatDelete(
+    ast: SqlDeleteStatement,
   ): string {
-    return `WHERE ${statement.where.conditions
-      .map(this.formatCondition)
-      .join(" AND ")}`;
+
+
+    return `
+DELETE FROM ${ast.table}
+${
+  ast.where
+    ? `WHERE ${this.expr(ast.where)}`
+    : ""
+};
+`.trim();
+
   }
 
-  private formatCondition(
-    condition: ConditionNode,
+
+
+
+
+  private expr(
+    node: SqlExpression,
   ): string {
-    return `${condition.field} ${condition.operator} ${this.quote(condition.value)}`;
+
+
+    switch(node.type) {
+
+
+      case "Literal":
+
+        return this.literal(node.value);
+
+
+
+      case "Identifier":
+
+        return node.name;
+
+
+
+      case "BinaryExpression":
+
+        return (
+          `${this.expr(node.left)} ` +
+          `${node.operator} ` +
+          `${this.expr(node.right)}`
+        );
+
+
+
+      case "FunctionCall":
+
+        return (
+          `${node.name}(${
+            node.arguments
+              .map(arg => this.expr(arg))
+              .join(", ")
+          })`
+        );
+
+
+
+      case "ArrayExpression":
+
+        return (
+          "(" +
+          node.elements
+            .map(item => this.expr(item))
+            .join(", ") +
+          ")"
+        );
+
+
+
+      case "RawExpression":
+
+        return node.value;
+
+
+      default:
+
+        throw new Error(
+          `Unsupported expression ${node.type}`,
+        );
+
+    }
+
   }
 
-  private formatGroupBy(
-    statement: SelectStatementNode,
-  ): string {
-    return `GROUP BY ${statement.groupBy.fields.join(", ")}`;
-  }
 
-  private formatOrderBy(
-    statement: SelectStatementNode,
-  ): string {
-    return `ORDER BY ${statement.orderBy.fields
-      .map(
-        (field) =>
-          `${field.field} ${field.direction}`,
-      )
-      .join(", ")}`;
-  }
 
-  private quote(
+
+
+  private literal(
     value: unknown,
   ): string {
-    if (value === null) {
+
+
+    if(value === null) {
+
       return "NULL";
+
     }
 
-    if (typeof value === "number") {
+
+    if(typeof value === "number") {
+
       return String(value);
+
     }
 
-    if (typeof value === "boolean") {
+
+    if(typeof value === "boolean") {
+
       return value
         ? "TRUE"
         : "FALSE";
+
     }
 
-    return `'${String(value).replace(/'/g, "''")}'`;
+
+    return `'${
+      String(value)
+        .replace(/'/g, "''")
+    }'`;
+
   }
+
 }

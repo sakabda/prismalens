@@ -1,94 +1,254 @@
 import { ASTBuilder } from "./ast-builder";
 import { PrismaValidator } from "./validator";
-import { SQLGenerator } from "./sql-generator";
 import { PrismaGenerator } from "./prisma-generator";
 import { QueryAnalyzer } from "./query-analyzer";
-import type { PrismaQueryAST, Token } from "./types";
+
+import { Planner } from "./planner";
+import { PlanningContext } from "./planner/context";
+import type { PlannerHandler } from "./planner/types";
+
+import { SQLFormatter } from "./formatter/sql";
+
+import type {
+  QueryNode,
+} from "./ast/prisma";
+
+
 
 export class Converter {
-  private validator = new PrismaValidator();
-  private sqlGenerator = new SQLGenerator();
-  private prismaGenerator = new PrismaGenerator();
-  private analyzer = new QueryAnalyzer();
 
-  /**
-   * Prisma AST → SQL
-   */
-  toSQL(ast: PrismaQueryAST): string {
-    const validation = this.validator.validate(ast);
+
+  private validator =
+    new PrismaValidator();
+
+
+  private prismaGenerator =
+    new PrismaGenerator();
+
+
+  private analyzer =
+    new QueryAnalyzer();
+
+
+  private planner: Planner;
+
+
+
+  private formatter =
+    new SQLFormatter();
+
+
+
+  constructor(
+    handlers: readonly PlannerHandler[],
+    context: PlanningContext,
+  ) {
+
+    this.planner =
+      new Planner(
+        handlers,
+        context,
+      );
+
+  }
+
+
+
+
+
+  toSQL(
+    ast: QueryNode,
+  ): string {
+
+
+    const validation =
+      this.validator.validate(
+        ast,
+      );
+
 
     if (!validation.valid) {
-      return this.formatErrors(validation.errors);
+
+      return this.formatErrors(
+        validation.errors,
+      );
+
     }
 
-    return this.sqlGenerator.generate(ast);
+
+
+    const sqlNode =
+      this.planner.plan(
+        ast,
+      );
+
+
+
+    return this.formatter.format(
+      sqlNode,
+    );
+
   }
 
-  /**
-   * Prisma AST → Prisma string
-   */
-  toPrisma(ast: PrismaQueryAST): string {
-    const validation = this.validator.validate(ast);
+
+
+
+
+  toPrisma(
+    ast: QueryNode,
+  ): string {
+
+
+    const validation =
+      this.validator.validate(
+        ast,
+      );
+
 
     if (!validation.valid) {
-      return this.formatErrors(validation.errors);
+
+      return this.formatErrors(
+        validation.errors,
+      );
+
     }
 
-    return this.prismaGenerator.generate(ast);
+
+
+    return this.prismaGenerator.generate(
+      ast as any,
+    );
+
   }
 
-  /**
-   * Analyze Prisma AST
-   */
-  analyze(ast: PrismaQueryAST) {
-    return this.analyzer.analyze(ast);
+
+
+
+
+  analyze(
+    ast: QueryNode,
+  ) {
+
+    return this.analyzer.analyze(
+      ast as any,
+    );
+
   }
 
-  /**
-   * Full pipeline (AST input)
-   */
-  process(ast: PrismaQueryAST) {
-    const validation = this.validator.validate(ast);
+
+
+
+
+  process(
+    ast: QueryNode,
+  ) {
+
+
+    const validation =
+      this.validator.validate(
+        ast,
+      );
+
 
     if (!validation.valid) {
+
       return {
         error: true,
         messages: validation.errors,
       };
+
     }
+
+
+
+    const sqlNode =
+      this.planner.plan(
+        ast,
+      );
+
+
 
     return {
-      sql: this.sqlGenerator.generate(ast),
-      prisma: this.prismaGenerator.generate(ast),
-      analysis: this.analyzer.analyze(ast),
+
+      sql:
+        this.formatter.format(
+          sqlNode,
+        ),
+
+
+      prisma:
+        this.prismaGenerator.generate(
+          ast as any,
+        ),
+
+
+      analysis:
+        this.analyzer.analyze(
+          ast as any,
+        ),
+
     };
+
   }
 
-  /**
-   * Prisma string → SQL (full pipeline)
-   */
-  prismaToSQL(tokens: Token[]): string {
-    const builder = new ASTBuilder(tokens);
 
-    const ast = builder.build();
+
+
+
+  prismaToSQL(
+    tokens: any[],
+  ): string {
+
+
+    const builder =
+      new ASTBuilder(
+        tokens as any,
+      );
+
+
+    const ast =
+      builder.build();
+
+
 
     if (!ast) {
+
       return "-- Invalid Prisma input";
+
     }
 
-    const validation = this.validator.validate(ast);
 
-    if (!validation.valid) {
-      return this.formatErrors(validation.errors);
-    }
 
-    return this.sqlGenerator.generate(ast);
+    const sqlNode =
+      this.planner.plan(
+        ast,
+      );
+
+
+
+    return this.formatter.format(
+      sqlNode,
+    );
+
   }
 
-  /**
-   * Helper: format validation errors
-   */
-  private formatErrors(errors: string[]): string {
-    return `-- Conversion failed:\n-- ${errors.join("\n-- ")}`;
+
+
+
+
+  private formatErrors(
+    errors: string[],
+  ) {
+
+    return (
+      `-- Conversion failed:\n` +
+      errors
+        .map(
+          error => `-- ${error}`,
+        )
+        .join("\n")
+    );
+
   }
+
 }
