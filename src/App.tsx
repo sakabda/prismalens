@@ -480,10 +480,10 @@ export default function App() {
       >
         <div className="w-full flex flex-col md:flex-row items-center justify-between gap-2">
           <span>
-            Prisma & SQL Query Translator • Offline Deterministic AST Parsing
+            Prisma & SQL Query Translator • Deterministic AST Parsing
             Engine
           </span>
-          <span>Crafted in client-side TypeScript & React</span>
+          <span>Built with ❤️ by <strong>Sakabda Das</strong></span>
         </div>
       </footer>
     </div>
