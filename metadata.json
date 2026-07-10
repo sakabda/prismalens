@@ -1,6 +1,5 @@
 {
-  "name": "Prisma & SQL Query Translator",
-  "description": "An interactive, robust converter and AST analyzer for mapping complex, nested Prisma queries to SQL and vice versa, featuring smart schema-aware optimizations and index suggestions.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "name": "PrismaLens",
+  "description": "Interactive Prisma and SQL query translator, featuring schema-aware optimizations, AST visualization, and index suggestions under the PrismaLens brand."
+  
 }

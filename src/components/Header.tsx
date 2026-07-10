@@ -16,7 +16,7 @@ export default function Header({ activeTab, setActiveTab, historyCount }: Header
         </div>
         <div>
           <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-teal-200 to-emerald-200 bg-clip-text text-transparent flex items-center gap-2">
-            Prisma & SQL Query Translator
+            PrismaLens
           </h1>
           <p className="text-xs text-slate-400 font-medium">
             Deterministic AST compiler mapping nested Prisma include joins to relational SQL projections & schemas
