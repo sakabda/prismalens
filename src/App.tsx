@@ -10,14 +10,12 @@ import {
   DbDialect, 
   QuerySchema, 
   HistoryItem,
-  ConversionResponse,
-  AstNode
+  ConversionResponse
 } from './types';
 import { 
   BLOG_SCHEMA, 
   ECOMMERCE_SCHEMA, 
-  PRISMA_TEMPLATES, 
-  SQL_TEMPLATES 
+  PRISMA_TEMPLATES
 } from './data/templates';
 
 // Component Imports
@@ -421,7 +419,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Humble Footer info block */}
+      {/* Footer info block */}
       <footer className="border-t border-slate-800 bg-slate-900/40 px-6 py-4 mt-8 text-center text-xs text-slate-500" id="footer-section">
         <div className="w-full flex flex-col md:flex-row items-center justify-between gap-2">
           <span>PrismaLens • Deterministic AST Parsing Engine</span>
