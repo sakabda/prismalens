@@ -1,9 +1,9 @@
 import React from 'react';
-import { ArrowLeftRight, Database, Clock, Code2 } from 'lucide-react';
+import { ArrowLeftRight, Database, Clock, Code2, CheckCircle2 } from 'lucide-react';
 
 interface HeaderProps {
-  activeTab: 'convert' | 'schema' | 'history';
-  setActiveTab: (tab: 'convert' | 'schema' | 'history') => void;
+  activeTab: 'convert' | 'schema' | 'history' | 'tests';
+  setActiveTab: (tab: 'convert' | 'schema' | 'history' | 'tests') => void;
   historyCount: number;
 }
 
@@ -61,6 +61,18 @@ export default function Header({ activeTab, setActiveTab, historyCount }: Header
         >
           <Clock size={14} />
           History ({historyCount})
+        </button>
+        <button
+          onClick={() => setActiveTab('tests')}
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'tests' 
+              ? 'bg-slate-800 text-teal-400 shadow-sm' 
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+          id="tab-tests"
+        >
+          <CheckCircle2 size={14} />
+          Test Suite
         </button>
       </div>
     </header>

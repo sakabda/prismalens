@@ -10,12 +10,14 @@ import {
   DbDialect, 
   QuerySchema, 
   HistoryItem,
-  ConversionResponse
+  ConversionResponse,
+  AstNode
 } from './types';
 import { 
   BLOG_SCHEMA, 
   ECOMMERCE_SCHEMA, 
-  PRISMA_TEMPLATES
+  PRISMA_TEMPLATES, 
+  SQL_TEMPLATES 
 } from './data/templates';
 
 // Component Imports
@@ -26,6 +28,7 @@ import AstViewer from './components/AstViewer';
 import PerformanceAdvisor from './components/PerformanceAdvisor';
 import SchemaDesigner from './components/SchemaDesigner';
 import HistoryManager from './components/HistoryManager';
+import TestSuite from './components/TestSuite';
 
 function capitalize(str: string): string {
   if (!str) return '';
@@ -73,7 +76,7 @@ function detectLanguage(code: string): QueryLanguage | null {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'convert' | 'schema' | 'history'>('convert');
+  const [activeTab, setActiveTab] = useState<'convert' | 'schema' | 'history' | 'tests'>('convert');
   const [fromLanguage, setFromLanguage] = useState<QueryLanguage>('prisma');
   const [dialect, setDialect] = useState<DbDialect>('postgresql');
   const [schema, setSchema] = useState<QuerySchema>(BLOG_SCHEMA);
@@ -199,6 +202,16 @@ export default function App() {
     setFromLanguage(item.fromLanguage);
     setDialect(item.dialect);
     setInputCode(item.input);
+    setActiveTab('convert');
+  };
+
+  const handleLoadTest = (input: string, category: 'Prisma' | 'SQL', testSchema: QuerySchema) => {
+    // Determine preset name
+    const isEcom = testSchema.models.some(m => m.name === 'Customer');
+    setSchemaPresetName(isEcom ? 'E-commerce & Customers' : 'Blogging & Team Portal');
+    setSchema(testSchema);
+    setFromLanguage(category === 'Prisma' ? 'prisma' : 'sql');
+    setInputCode(input);
     setActiveTab('convert');
   };
 
@@ -416,10 +429,22 @@ export default function App() {
               />
             </motion.div>
           )}
+
+          {activeTab === 'tests' && (
+            <motion.div
+              key="tests"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.15 }}
+            >
+              <TestSuite onLoadTest={handleLoadTest} />
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
-      {/* Footer info block */}
+      {/* Humble Footer info block */}
       <footer className="border-t border-slate-800 bg-slate-900/40 px-6 py-4 mt-8 text-center text-xs text-slate-500" id="footer-section">
         <div className="w-full flex flex-col md:flex-row items-center justify-between gap-2">
           <span>PrismaLens • Deterministic AST Parsing Engine</span>
