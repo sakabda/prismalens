@@ -62,7 +62,7 @@ export default function Header({ activeTab, setActiveTab, historyCount }: Header
           <Clock size={14} />
           History ({historyCount})
         </button>
-        <button
+        {/* <button
           onClick={() => setActiveTab('tests')}
           className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
             activeTab === 'tests' 
@@ -73,7 +73,7 @@ export default function Header({ activeTab, setActiveTab, historyCount }: Header
         >
           <CheckCircle2 size={14} />
           Test Suite
-        </button>
+        </button> */}
       </div>
     </header>
   );
