@@ -113,7 +113,7 @@ export default function App() {
 
   // Toggle AST Nodes
   const toggleAstNode = (id: string) => {
-    setAstExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+    setAstExpanded((prev: any) => ({ ...prev, [id]: !prev[id] }));
   };
 
   // Run Translation on current state
@@ -186,9 +186,12 @@ export default function App() {
       fromLanguage,
       dialect
     };
-    setHistory(prev => {
+    setHistory((prev: any) => {
       const updated = [newItem, ...prev].slice(0, 50); // limit to last 50
-      localStorage.setItem('prisma_sql_translator_history', JSON.stringify(updated));
+      localStorage.setItem(
+        "prisma_sql_translator_history",
+        JSON.stringify(updated),
+      );
       return updated;
     });
   };
