@@ -790,7 +790,14 @@ export function translatePrismaToSql(
           columns.push({ sqlName: fullColName, aliasName: outAlias });
         } else {
           // It's a relation/nested object (e.g., posts: { select: { ... } })
-          handleRelation(key, val, fieldDef, tableAlias, path);
+          handleRelation(
+            key,
+            val,
+            fieldDef,
+            tableAlias,
+            currentModelName,
+            path,
+          );
         }
       });
     }
@@ -818,7 +825,7 @@ export function translatePrismaToSql(
       Object.keys(includeObj || {}).forEach((key) => {
         const val = includeObj[key];
         const fieldDef = modelDef?.fields.find((f) => f.name === key);
-        handleRelation(key, val, fieldDef, tableAlias, path);
+        handleRelation(key, val, fieldDef, tableAlias, currentModelName, path);
       });
     }
   }
@@ -828,6 +835,7 @@ export function translatePrismaToSql(
     nestedObj: any,
     fieldDef: any,
     parentAlias: string,
+    parentModelName: string,
     path: string[],
   ) {
     // Determine related model
@@ -853,7 +861,7 @@ export function translatePrismaToSql(
       const rRefs = fieldDef.relationReferences; // e.g. ["id"]
       const conditions = pFields.map((pf: string, idx: number) => {
         const parentCol = parentAlias;
-        const parentFieldDef = findModel(parentAlias)?.fields.find(
+        const parentFieldDef = findModel(parentModelName)?.fields.find(
           (f) => f.name === pf,
         );
         const parentDbCol = parentFieldDef?.dbName || pf;
@@ -870,9 +878,8 @@ export function translatePrismaToSql(
       // Check if child has a relation field pointing back to parent
       const childRelationField = relatedModelDef?.fields.find(
         (f) =>
-          (f.isRelation &&
-            f.relationModel?.toLowerCase() === parentAlias.toLowerCase()) ||
-          f.relationModel?.toLowerCase() === baseModel.toLowerCase(),
+          f.isRelation &&
+          f.relationModel?.toLowerCase() === parentModelName.toLowerCase(),
       );
 
       if (
@@ -884,7 +891,7 @@ export function translatePrismaToSql(
         const parentRefs = childRelationField.relationReferences;
         const conditions = childFields.map((cf: string, idx: number) => {
           const parentCol = parentAlias;
-          const parentFieldDef = findModel(parentAlias)?.fields.find(
+          const parentFieldDef = findModel(parentModelName)?.fields.find(
             (f) => f.name === parentRefs[idx],
           );
           const parentDbCol = parentFieldDef?.dbName || parentRefs[idx];
@@ -1018,17 +1025,28 @@ export function translatePrismaToSql(
               f.relationModel?.toLowerCase() === currentModelName.toLowerCase(),
           );
           if (backRel?.relationFields && backRel.relationFields.length > 0) {
-            // backRel.relationFields contains the fields on the back relation (parent side)
-            // backRel.relationReferences contains the foreign key references (child side)
-            parentKey = backRel.relationFields[0];
-            childForeignKey = backRel.relationReferences?.[0] || childForeignKey;
+            parentKey = backRel.relationReferences?.[0] || "id";
+            childForeignKey = backRel.relationFields[0];
           }
         }
+
+        // Map logical field names to physical DB column names
+        const parentModelDef = findModel(currentModelName);
+        const parentFieldDef = parentModelDef?.fields.find(
+          (f) => f.name === parentKey,
+        );
+        const parentDbCol = parentFieldDef?.dbName || parentKey;
+
+        const childModelDef = findModel(relatedModelName);
+        const childFieldDef = childModelDef?.fields.find(
+          (f) => f.name === childForeignKey,
+        );
+        const childDbCol = childFieldDef?.dbName || childForeignKey;
 
         // We translate relation condition using EXISTS subqueries
         const subAlias = `sub_${key}`;
         const subWhere = compileWhere(subFilter, subAlias, relatedModelName);
-        const linkCondition = `${quoteId(currentAlias)}.${quoteId(parentKey)} = ${quoteId(subAlias)}.${quoteId(childForeignKey)}`;
+        const linkCondition = `${quoteId(currentAlias)}.${quoteId(parentDbCol)} = ${quoteId(subAlias)}.${quoteId(childDbCol)}`;
         const finalSubWhere =
           subWhere ? `${linkCondition} AND ${subWhere}` : linkCondition;
 
@@ -1232,6 +1250,13 @@ export function translateSqlToPrisma(
   dialect: DbDialect,
   schema?: QuerySchema,
 ): { prisma: string; ast: AstNode } {
+  function findModel(name: string): ModelDefinition | undefined {
+    if (!schema || !schema.models) return undefined;
+    return schema.models.find(
+      (m) => m.name.toLowerCase() === name.toLowerCase(),
+    );
+  }
+
   // Clean comments and normalize whitespace
   let cleanSql = sqlStr.replace(/--.*$/gm, "");
   cleanSql = cleanSql.replace(/\/\*[\s\S]*?\*\//g, "");
@@ -1726,8 +1751,31 @@ export function translateSqlToPrisma(
 
       if (matchedParentAlias) {
         const parentPath = aliasToPathMap[matchedParentAlias];
-        // Guess relation name: plural if hasMany, singular if belongsTo
-        const relationKey = camelCase(join.alias);
+        const parentModelName = aliasToModelMap[matchedParentAlias];
+        const parentModelDef = schema?.models.find(
+          (m) => m.name === parentModelName,
+        );
+
+        // Find the relation field on parentModelDef that points to join.table
+        let relationKey = "";
+        if (parentModelDef) {
+          const relField = parentModelDef.fields.find(
+            (f) =>
+              f.isRelation &&
+              (f.relationModel?.toLowerCase() === join.table.toLowerCase() ||
+                findModel(f.relationModel || "")?.dbName?.toLowerCase() ===
+                  join.table.toLowerCase()),
+          );
+          if (relField) {
+            relationKey = relField.name;
+          }
+        }
+
+        // Fallback if not found in schema
+        if (!relationKey) {
+          relationKey = camelCase(join.alias);
+        }
+
         aliasToPathMap[join.alias] = [...parentPath, relationKey];
 
         const rModel = schema?.models.find(
